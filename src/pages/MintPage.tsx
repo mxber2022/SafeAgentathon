@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { FileUp, Globe2, Coins, Info, Plus, X } from "lucide-react";
+import { supabase } from '../lib/supabase';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { mintNFT } from '../lib/contract';
 
 interface RoyaltySettings {
   creatorShare: number;
@@ -17,6 +20,11 @@ interface Attribute {
   value: string;
 }
 
+interface ContentData {
+  attributes: Attribute[];
+  originalLanguage: string;
+}
+
 export function MintPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -29,7 +37,9 @@ export function MintPage() {
     creatorShare: 85,
     agentShare: 15,
   });
-  const [isUploading, setIsUploading] = useState(false);
+  const [mintingStatus, setMintingStatus] = useState<'idle' | 'storing' | 'minting' | 'success'>('idle');
+  const [transactionHash, setTransactionHash] = useState<string | null>(null);
+  const { address } = useAppKitAccount();
 
   const languages: Language[] = [
     { code: "en", name: "English", nativeName: "English" },
@@ -56,12 +66,32 @@ export function MintPage() {
 
   const handleAddAttribute = () => {
     if (newTraitType && newTraitValue) {
-      setAttributes([
-        ...attributes,
-        { trait_type: newTraitType, value: newTraitValue },
-      ]);
+      // Check if we already have an attribute for this language
+      const existingIndex = attributes.findIndex(
+        attr => attr.trait_type === newTraitType
+      );
+
+      if (existingIndex >= 0) {
+        // Update existing attribute
+        const updatedAttributes = [...attributes];
+        updatedAttributes[existingIndex] = {
+          trait_type: newTraitType,
+          value: newTraitValue.trim() // Ensure we trim any whitespace
+        };
+        setAttributes(updatedAttributes);
+      } else {
+        // Add new attribute
+        setAttributes([
+          ...attributes,
+          { 
+            trait_type: newTraitType, 
+            value: newTraitValue.trim() // Ensure we trim any whitespace
+          }
+        ]);
+      }
+      
+      // Clear only the value, keep the trait type (language)
       setNewTraitValue("");
-      // Don't reset newTraitType as it should keep the selected language
     }
   };
 
@@ -71,25 +101,91 @@ export function MintPage() {
 
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsUploading(true);
+    if (!address) {
+      console.error('No wallet connected');
+      return;
+    }
+    
+    setMintingStatus('storing');
+    let contentUri: string | null = null;
 
-    const metadata = {
-      name: title,
-      description,
-      image: imageUrl,
-      language: originalLanguage,
-      attributes,
-    };
+    try {
+      // 1. Store content in Supabase
+      const contentData: ContentData = {
+        attributes,
+        originalLanguage
+      };
 
-    console.log("NFT Metadata:", metadata);
+      const { data: contentRecord, error: contentError } = await supabase
+        .from('content')
+        .insert({
+          title,
+          description,
+          image_url: imageUrl,
+          language: originalLanguage,
+          content_data: contentData,
+          creator_id: address,
+          creator_share: royalties.creatorShare,
+          agent_share: royalties.agentShare
+        })
+        .select()
+        .single();
 
-    // Simulating minting process
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsUploading(false);
+      if (contentError) {
+        console.error('Supabase error:', contentError);
+        throw contentError;
+      }
+
+      if (!contentRecord) {
+        throw new Error('No content record returned');
+      }
+
+      // 2. Generate URI for the NFT
+      contentUri = `${window.location.origin}/api/content/${contentRecord.id}`;
+
+      // 3. Update the content record with the URI
+      const { error: updateError } = await supabase
+        .from('content')
+        .update({ uri: contentUri })
+        .eq('id', contentRecord.id);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw updateError;
+      }
+
+      // 4. Mint NFT
+      setMintingStatus('minting');
+      const receipt = await mintNFT(address, contentUri);
+      setTransactionHash(receipt.hash);
+      setMintingStatus('success');
+
+      console.log('Content stored and NFT minted successfully!');
+      console.log('Transaction hash:', receipt.hash);
+      console.log('Content URI:', contentUri);
+    } catch (error) {
+      console.error('Error minting NFT:', error);
+      setMintingStatus('idle');
+      // If we have a contentUri but minting failed, we should keep the content
+      // as it can be minted again later
+    }
   };
 
   const inputClasses =
     "w-full px-4 py-2.5 bg-surface-200 rounded-xl text-surface-900 placeholder:text-surface-600 focus:ring-2 focus:ring-brand-500 focus:outline-none transition-all";
+
+  const getMintButtonText = () => {
+    switch (mintingStatus) {
+      case 'storing':
+        return 'Storing Content...';
+      case 'minting':
+        return 'Minting NFT...';
+      case 'success':
+        return 'Minted Successfully!';
+      default:
+        return 'Mint Content';
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 pb-16">
@@ -356,39 +452,61 @@ export function MintPage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={!title || !originalLanguage || isUploading}
-            className="connect-button w-full py-4 flex items-center justify-center"
-          >
-            {isUploading ? (
-              <div className="flex items-center space-x-2">
-                <svg
-                  className="animate-spin h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                <span>Minting...</span>
+          <div className="space-y-4">
+            <button
+              type="submit"
+              disabled={!title || !originalLanguage || mintingStatus !== 'idle' || !address}
+              className="connect-button w-full py-4 flex items-center justify-center"
+            >
+              {mintingStatus !== 'idle' ? (
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <span>{getMintButtonText()}</span>
+                </div>
+              ) : (
+                "Mint Content"
+              )}
+            </button>
+
+            {transactionHash && (
+              <div className="bg-surface-200/50 rounded-xl p-4 flex items-start gap-3">
+                <Info className="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-surface-900 mb-1">NFT Minted Successfully!</p>
+                  <p className="text-surface-700">
+                    Transaction Hash:{' '}
+                    <a
+                      href={`https://sepolia.etherscan.io/tx/${transactionHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-500 hover:text-brand-600 underline"
+                    >
+                      {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
+                    </a>
+                  </p>
+                </div>
               </div>
-            ) : (
-              "Mint Content"
             )}
-          </button>
+          </div>
         </form>
       </div>
     </div>
