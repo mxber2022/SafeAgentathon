@@ -1,6 +1,6 @@
 # PolyGlot - AI-Powered Content Translation Platform
 
-PolyGlot is a revolutionary blockchain-powered platform that transforms digital content ownership and global accessibility. By combining NFT technology with AI-powered translations, we enable content creators to securely monetize their work across language barriers while maintaining full ownership and control.
+PolyGlot is a dApp where creators upload text content (comming video), and AI translates/dubs it into multiple languages.The Sei blockchain ensures creators retain IP, copyright and metadata for tracking royalties.
 
 ## Features
 
