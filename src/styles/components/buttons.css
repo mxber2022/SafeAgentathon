@@ -1,0 +1,57 @@
+@layer components {
+  .connect-button {
+    @apply relative overflow-hidden 
+           bg-gradient-to-r from-brand-500/90 to-brand-600/90
+           text-white/95 px-7 py-2.5 rounded-xl
+           font-semibold tracking-tight text-[14px]
+           hover:from-brand-500 hover:to-brand-600
+           hover:text-white hover:scale-[1.02]
+           active:scale-[0.98]
+           transition-all duration-300 ease-out
+           shadow-lg shadow-brand-500/20 
+           hover:shadow-xl hover:shadow-brand-500/30
+           border border-white/[0.08]
+           disabled:opacity-50 disabled:cursor-not-allowed
+           disabled:hover:scale-100
+           disabled:hover:from-brand-500/90 disabled:hover:to-brand-600/90
+           backdrop-blur-xl backdrop-saturate-150
+           ring-2 ring-white/[0.05] ring-offset-2 ring-offset-surface-100;
+
+    /* Premium text treatment */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+    letter-spacing: -0.01em;
+  }
+
+  .connect-button::before {
+    @apply content-[''] absolute inset-0 
+           bg-gradient-to-r from-transparent via-white/[0.12] to-transparent
+           -translate-x-full hover:translate-x-full 
+           transition-transform duration-1000 ease-in-out;
+  }
+
+  /* Glow effect on hover */
+  .connect-button::after {
+    @apply content-[''] absolute -inset-1
+           bg-gradient-to-r from-brand-500/0 via-brand-400/30 to-brand-500/0
+           opacity-0 hover:opacity-100
+           blur-xl transition-opacity duration-500;
+    z-index: -1;
+  }
+
+  .feature-card {
+    @apply bg-surface-100 rounded-2xl p-8 
+           border border-surface-200
+           transition-all duration-300
+           hover:bg-surface-200 hover:scale-[1.02]
+           hover:shadow-xl hover:shadow-brand-500/5;
+  }
+
+  .language-option {
+    @apply p-6 border rounded-xl 
+           transition-all duration-300 cursor-pointer 
+           border-surface-300 bg-surface-100
+           hover:bg-surface-200 hover:border-brand-500/50
+           hover:scale-[1.02] hover:shadow-lg;
+  }
+}
