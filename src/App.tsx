@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Dock } from './components/layout/Dock';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
+import { MarketplacePage } from './pages/MarketplacePage';
 import { MintPage } from './pages/MintPage';
 import { PageTransition } from './components/layout/PageTransition';
 
@@ -23,6 +24,11 @@ function AnimatedRoutes() {
             <MintPage />
           </PageTransition>
         } />
+        <Route path="/marketplace" element={
+          <PageTransition>
+            <MarketplacePage />
+          </PageTransition>
+        } />
       </Routes>
     </AnimatePresence>
   );
@@ -30,16 +36,16 @@ function AnimatedRoutes() {
 
 export default function App() {
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col bg-surface-50">
-        <Dock />
-        
-        <main className="flex-grow pt-28">
-          <AnimatedRoutes />
-        </main>
+      <Router>
+        <div className="min-h-screen flex flex-col bg-surface-50">
+          <Dock />
+          
+          <main className="flex-grow pt-28">
+            <AnimatedRoutes />
+          </main>
 
-        <Footer />
-      </div>
-    </Router>
+          <Footer />
+        </div>
+      </Router>
   );
 }
