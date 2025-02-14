@@ -386,7 +386,7 @@ export function MintPage() {
                 <span>Minting...</span>
               </div>
             ) : (
-              "Mint NFT"
+              "Mint Content"
             )}
           </button>
         </form>
