@@ -1,13 +1,6 @@
-import React, { useState } from "react";
-import {
-  FileText,
-  Globe2,
-  Tag,
-  Search,
-  Filter,
-  ExternalLink,
-} from "lucide-react";
-import { motion } from "framer-motion";
+import React, { useState } from 'react';
+import { FileText, Globe2, Tag, Search, Filter, ExternalLink } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface CollectionItem {
   id: string;
@@ -15,7 +8,7 @@ interface CollectionItem {
   description: string;
   creator: string;
   purchaseDate: string;
-  type: "purchase" | "translation";
+  type: 'purchase' | 'translation';
   originalLanguage: string;
   translatedLanguage?: string;
   price: number;
@@ -23,43 +16,40 @@ interface CollectionItem {
 }
 
 export function CollectionsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('all');
 
   // Mock collection data
   const collectionItems: CollectionItem[] = [
     {
-      id: "1",
-      title: "Advanced AI Framework Documentation",
-      description:
-        "Complete technical documentation and implementation guide for a cutting-edge AI framework.",
-      creator: "TechDocs Pro",
-      purchaseDate: "2024-03-15",
-      type: "purchase",
-      originalLanguage: "English",
+      id: '1',
+      title: 'Advanced AI Framework Documentation',
+      description: 'Complete technical documentation and implementation guide for a cutting-edge AI framework.',
+      creator: 'TechDocs Pro',
+      purchaseDate: '2024-03-15',
+      type: 'purchase',
+      originalLanguage: 'English',
       price: 500,
-      features: ["Source Code", "API Documentation", "Updates Included"],
+      features: ['Source Code', 'API Documentation', 'Updates Included']
     },
     {
-      id: "2",
+      id: '2',
       title: 'Digital Art Collection: "Future Visions"',
-      description:
-        "A curated collection of AI-generated artwork exploring themes of technology and nature.",
-      creator: "ArtisticMinds",
-      purchaseDate: "2024-03-14",
-      type: "translation",
-      originalLanguage: "French",
-      translatedLanguage: "English",
+      description: 'A curated collection of AI-generated artwork exploring themes of technology and nature.',
+      creator: 'ArtisticMinds',
+      purchaseDate: '2024-03-14',
+      type: 'translation',
+      originalLanguage: 'French',
+      translatedLanguage: 'English',
       price: 300,
-      features: ["High Resolution", "Commercial License"],
-    },
+      features: ['High Resolution', 'Commercial License']
+    }
   ];
 
-  const filteredItems = collectionItems.filter((item) => {
-    const matchesSearch =
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === "all" || item.type === selectedType;
+  const filteredItems = collectionItems.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = selectedType === 'all' || item.type === selectedType;
     return matchesSearch && matchesType;
   });
 
@@ -113,7 +103,7 @@ export function CollectionsPage() {
 
         {/* Collection Grid */}
         <div className="grid grid-cols-1 gap-6">
-          {filteredItems.map((item) => (
+          {filteredItems.map(item => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 20 }}
@@ -123,19 +113,17 @@ export function CollectionsPage() {
               <div className="flex flex-col md:flex-row justify-between gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    {item.type === "translation" ? (
+                    {item.type === 'translation' ? (
                       <Globe2 className="w-5 h-5 text-brand-500" />
                     ) : (
                       <FileText className="w-5 h-5 text-brand-500" />
                     )}
-                    <h3 className="text-xl font-bold text-surface-900">
-                      {item.title}
-                    </h3>
+                    <h3 className="text-xl font-bold text-surface-900">{item.title}</h3>
                   </div>
                   <p className="text-surface-700 mb-4">{item.description}</p>
-
+                  
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {item.features.map((feature) => (
+                    {item.features.map(feature => (
                       <span
                         key={feature}
                         className="px-3 py-1 rounded-full text-sm bg-surface-200 text-surface-700 border border-surface-300"
@@ -148,7 +136,7 @@ export function CollectionsPage() {
                   <div className="flex flex-wrap items-center gap-4 text-sm text-surface-600">
                     <span>Creator: {item.creator}</span>
                     <span>Purchased: {item.purchaseDate}</span>
-                    {item.type === "translation" ? (
+                    {item.type === 'translation' ? (
                       <span className="flex items-center gap-1">
                         <Globe2 className="w-4 h-4" />
                         {item.originalLanguage} → {item.translatedLanguage}
@@ -175,12 +163,10 @@ export function CollectionsPage() {
           {filteredItems.length === 0 && (
             <div className="text-center py-12">
               <FileText className="w-12 h-12 text-surface-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-surface-900 mb-2">
-                No items found
-              </h3>
+              <h3 className="text-xl font-bold text-surface-900 mb-2">No items found</h3>
               <p className="text-surface-700">
-                {searchQuery
-                  ? "No items match your search criteria"
+                {searchQuery 
+                  ? "No items match your search criteria" 
                   : "Your collection is empty. Start by purchasing or translating content!"}
               </p>
             </div>
