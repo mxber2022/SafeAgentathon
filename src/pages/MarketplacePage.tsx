@@ -1,46 +1,90 @@
-import React, { useState } from 'react';
-import { Search, Filter, Globe2, Sparkles, ArrowRight, Users, Languages, FileText, Tag, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Globe2, Sparkles, Users, Languages, FileText, Tag, X, Coins, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../lib/supabase';
+import { Database } from '../lib/database.types';
+import { useNavigate } from 'react-router-dom';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { purchaseTranslation } from '../lib/contract';
 
-interface Creator {
-  id: string;
-  address: string;
-  name: string;
-  reputation: number;
+type Content = Database['public']['Tables']['content']['Row'];
+
+interface TranslationDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  language: string;
+  translatedText: string;
 }
 
-interface ContentItem {
-  id: string;
-  title: string;
-  description: string;
-  author: Creator;
-  originalLanguage: string;
-  category: string;
-  price: number;
-  features: string[];
-  timestamp: string;
-}
+function TranslationDialog({ isOpen, onClose, language, translatedText }: TranslationDialogProps) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 bg-surface-50/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-surface-100 rounded-2xl p-6 max-w-2xl w-full mx-4 border border-surface-200 shadow-xl"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center">
+                  <Check className="w-5 h-5 text-brand-500" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-surface-900">Translation Purchased!</h3>
+                  <p className="text-sm text-surface-700">Your content has been translated to {language}</p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-surface-200 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-surface-700" />
+              </button>
+            </div>
 
-interface ActionRequest {
-  contentId: string;
-  type: 'translate' | 'purchase' | 'license';
-  selectedLanguage?: string;
-}
+            <div className="bg-surface-200 rounded-xl p-6 mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Globe2 className="w-4 h-4 text-brand-500" />
+                <h4 className="font-medium text-surface-900">{language} Translation</h4>
+              </div>
+              <p className="text-surface-700 whitespace-pre-wrap">{translatedText}</p>
+            </div>
 
-interface SelectedTranslations {
-  [key: string]: string; // contentId -> languageCode
+            <div className="flex justify-end">
+              <button
+                onClick={onClose}
+                className="connect-button group"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
 }
 
 export function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedCreator, setSelectedCreator] = useState<string>('');
-  const [actionRequest, setActionRequest] = useState<ActionRequest | null>(null);
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
-  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
-  const [selectedTranslations, setSelectedTranslations] = useState<SelectedTranslations>({});
-
-  // Available languages for translation
+  const [selectedContent, setSelectedContent] = useState<Content | null>(null);
+  const [contents, setContents] = useState<Content[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [purchaseStatus, setPurchaseStatus] = useState<'idle' | 'purchasing' | 'success'>('idle');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('');
+  const [showTranslationDialog, setShowTranslationDialog] = useState(false);
+  const [currentTranslation, setCurrentTranslation] = useState<{ language: string; text: string } | null>(null);
+  const { address } = useAppKitAccount();
+  const navigate = useNavigate();
+  
+  
   const availableLanguages = [
     { code: 'es', name: 'Spanish', nativeName: 'Español' },
     { code: 'fr', name: 'French', nativeName: 'Français' },
@@ -55,106 +99,146 @@ export function MarketplacePage() {
     { code: 'ar', name: 'Arabic', nativeName: 'العربية' }
   ];
 
-  // Mock creators data
-  const creators: Creator[] = [
-    { id: '1', address: '0x1234...5678', name: 'TechDocs Pro', reputation: 4.8 },
-    { id: '2', address: '0x9876...4321', name: 'Literary Works', reputation: 4.9 },
-    { id: '3', address: '0x5678...9012', name: 'Global Marketing', reputation: 4.7 },
-  ];
+  useEffect(() => {
+    fetchContents();
+  
+  }, []);
 
-  // Mock content data
-  const contentItems: ContentItem[] = [
-    {
-      id: '1',
-      title: 'Advanced AI Framework Documentation',
-      description: 'Complete technical documentation and implementation guide for a cutting-edge AI framework.',
-      author: creators[0],
-      originalLanguage: 'English',
-      category: 'Technical',
-      price: 500,
-      features: ['Translation Available', 'Source Code', 'API Documentation'],
-      timestamp: '2024-03-15'
-    },
-    {
-      id: '2',
-      title: 'Digital Art Collection: "Future Visions"',
-      description: 'A curated collection of AI-generated artwork exploring themes of technology and nature.',
-      author: creators[1],
-      originalLanguage: 'French',
-      category: 'Art',
-      price: 300,
-      features: ['High Resolution', 'Commercial License', 'Translation Available'],
-      timestamp: '2024-03-14'
-    },
-    {
-      id: '3',
-      title: 'Global Brand Strategy Guide',
-      description: 'Comprehensive marketing strategy and brand guidelines for international markets.',
-      author: creators[2],
-      originalLanguage: 'English',
-      category: 'Marketing',
-      price: 750,
-      features: ['Translation Available', 'Case Studies', 'Templates'],
-      timestamp: '2024-03-13'
+  const fetchContents = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setContents(data || []);
+    } catch (err) {
+      console.error('Error fetching contents:', err);
+      setError('Failed to load content');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const categories = [
-    'All Categories',
-    'Technical',
-    'Art',
-    'Marketing',
-    'Literature',
-    'Education',
-    'Music'
-  ];
-
-  const filteredContent = contentItems.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || 
-                           selectedCategory === 'All Categories' ||
-                           item.category === selectedCategory;
-    const matchesCreator = !selectedCreator || 
-                          selectedCreator === 'all' ||
-                          item.author.id === selectedCreator;
-    return matchesSearch && matchesCategory && matchesCreator;
-  });
-
-  const handleAction = (contentId: string, type: 'translate' | 'purchase' | 'license') => {
-    const content = contentItems.find(item => item.id === contentId);
-    if (!content) return;
-
+  const handleAction = (content: Content, type: 'translate' | 'purchase') => {
     if (type === 'translate') {
       setSelectedContent(content);
       setShowLanguageDialog(true);
-    } else {
-      setActionRequest({ contentId, type });
+    } else if (type === 'purchase') {
+      // Navigate to the content page
+      navigate(`/api/content/${content.id}`);
     }
   };
 
-  const handleTranslationRequest = (language: string) => {
-    if (!selectedContent) return;
+  const handleTranslationRequest = async (language: string) => {
+    if (!selectedContent || !address) return;
     
-    setSelectedTranslations(prev => ({
-      ...prev,
-      [selectedContent.id]: language
-    }));
-    
-    console.log(`Processing translation request for content ${selectedContent.id} to ${language}`);
-    // Here you would handle the translation request
-    
-    setShowLanguageDialog(false);
-    setSelectedContent(null);
+    try {
+      setPurchaseStatus('purchasing');
+      setSelectedLanguage(language);
+
+      // For demonstration, let's show a German translation
+      const translatedText = language === 'German' 
+        ? "Berlin ist gut"
+        : `[Translation of original content]\n\nThis is a placeholder for the AI-translated content in ${language}. In a production environment, this would be generated by a language model.`;
+
+      try {
+        // Attempt to purchase translation through smart contract
+        await purchaseTranslation(
+          selectedContent.id,
+          language,
+          selectedContent.creator_id,
+          selectedContent.creator_share || 85,
+          selectedContent.agent_share || 15
+        );
+
+        // If successful, update content in Supabase
+        const updatedContent = {
+          ...selectedContent,
+          content_data: {
+            ...selectedContent.content_data,
+            attributes: [
+              ...(selectedContent.content_data?.attributes || []).filter(
+                attr => attr.trait_type.toLowerCase() !== language.toLowerCase()
+              ),
+              {
+                trait_type: language,
+                value: translatedText
+              }
+            ]
+          }
+        };
+
+        const { error: updateError } = await supabase
+          .from('content')
+          .update({ 
+            content_data: updatedContent.content_data,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedContent.id);
+
+        if (updateError) throw updateError;
+        
+        setPurchaseStatus('success');
+      } catch (error) {
+        console.error('Transaction failed:', error);
+        // Even if transaction fails, we'll still show the dialog
+        setPurchaseStatus('idle');
+      }
+
+      // Show the translation dialog regardless of transaction success
+      setCurrentTranslation({ language, text: translatedText });
+      setShowTranslationDialog(true);
+
+      // Reset purchase status after a delay
+      setTimeout(() => {
+        setPurchaseStatus('idle');
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error in translation process:', error);
+      setPurchaseStatus('idle');
+      
+      // Show error translation dialog
+      setCurrentTranslation({ 
+        language, 
+        text: "Note: Transaction failed, but here's a preview of the translation:\n\n" + 
+              (language === 'German' ? "Berlin ist gut" : "Translation preview not available.")
+      });
+      setShowTranslationDialog(true);
+    }
   };
 
-  const getTranslateButtonText = (contentId: string) => {
-    const selectedLanguage = selectedTranslations[contentId];
-    if (!selectedLanguage) return 'Translate';
-    
-    const language = availableLanguages.find(lang => lang.code === selectedLanguage);
-    return language ? `Translate to ${language.name}` : 'Translate';
-  };
+  const filteredContent = contents.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory || selectedCategory === 'All Categories';
+    const matchesCreator = !selectedCreator || selectedCreator === 'all' ||
+                          item.creator_id === selectedCreator;
+    return matchesSearch && matchesCategory && matchesCreator;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <FileText className="w-16 h-16 text-surface-600 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-surface-900 mb-2">Error Loading Content</h1>
+          <p className="text-surface-700">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -197,9 +281,12 @@ export function MarketplacePage() {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-surface-200 rounded-xl text-surface-900 appearance-none focus:ring-2 focus:ring-brand-500 focus:outline-none transition-all"
               >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
+                <option value="All Categories">All Categories</option>
+                <option value="Technical">Technical</option>
+                <option value="Art">Art</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Literature">Literature</option>
+                <option value="Education">Education</option>
               </select>
             </div>
 
@@ -212,9 +299,9 @@ export function MarketplacePage() {
                 className="w-full pl-12 pr-4 py-3 bg-surface-200 rounded-xl text-surface-900 appearance-none focus:ring-2 focus:ring-brand-500 focus:outline-none transition-all"
               >
                 <option value="all">All Creators</option>
-                {creators.map(creator => (
-                  <option key={creator.id} value={creator.id}>
-                    {creator.name} ({creator.address}) - ⭐ {creator.reputation}
+                {Array.from(new Set(contents.map(item => item.creator_id))).map(creatorId => (
+                  <option key={creatorId} value={creatorId}>
+                    {creatorId.slice(0, 6)}...{creatorId.slice(-4)}
                   </option>
                 ))}
               </select>
@@ -236,56 +323,62 @@ export function MarketplacePage() {
                     <h3 className="text-xl font-bold text-surface-900">{item.title}</h3>
                   </div>
                   <p className="text-surface-700 mb-4">{item.description}</p>
+                  
+                  {/* Display content features/attributes */}
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {item.features.map(feature => (
-                      <span
-                        key={feature}
-                        className="px-3 py-1 rounded-full text-sm bg-surface-200 text-surface-700 border border-surface-300"
-                      >
-                        {feature}
+                    <span className="px-3 py-1 rounded-full text-sm bg-surface-200 text-surface-700 border border-surface-300">
+                      Original: {item.language}
+                    </span>
+                    {item.content_data?.attributes?.length > 1 && (
+                      <span className="px-3 py-1 rounded-full text-sm bg-surface-200 text-surface-700 border border-surface-300">
+                        {item.content_data.attributes.length - 1} Translations
                       </span>
-                    ))}
+                    )}
                   </div>
+
                   <div className="flex flex-wrap items-center gap-4 text-sm text-surface-600">
                     <div className="flex items-center gap-1">
                       <Users className="w-4 h-4" />
-                      <span>{item.author.name}</span>
-                      <span className="text-brand-500">⭐ {item.author.reputation}</span>
+                      <span>{item.creator_id.slice(0, 6)}...{item.creator_id.slice(-4)}</span>
                     </div>
-                    <span>Category: {item.category}</span>
-                    <span>Language: {item.originalLanguage}</span>
-                    <span>Posted: {item.timestamp}</span>
+                    <span>Created: {new Date(item.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-3">
                   <div className="text-2xl font-bold text-brand-500">
-                    {item.price} POLY
+                    View Content
                   </div>
                   <div className="flex gap-2">
-                  
-                    {item.features.includes('Translation Available') && (
-                      <button
-                        onClick={() => handleAction(item.id, 'translate')}
-                        className={`px-4 py-2 rounded-xl border border-surface-300 text-surface-700 hover:text-surface-900 hover:border-brand-500/30 transition-all flex items-center gap-2 ${
-                          selectedTranslations[item.id] ? 'bg-surface-200' : ''
-                        }`}
-                      >
-                        <Globe2 className="w-4 h-4" />
-                        {getTranslateButtonText(item.id)}
-                      </button>
-                    )}
-                      <button
-                      onClick={() => handleAction(item.id, 'purchase')}
+                    <button
+                      onClick={() => handleAction(item, 'translate')}
+                      className="px-4 py-2 rounded-xl border border-surface-300 text-surface-700 hover:text-surface-900 hover:border-brand-500/30 transition-all flex items-center gap-2"
+                    >
+                      <Globe2 className="w-4 h-4" />
+                      Translate
+                    </button>
+                    <button
+                      onClick={() => handleAction(item, 'purchase')}
                       className="connect-button group flex items-center gap-2"
                     >
-                      Purchase
-                      
+                      View Details
                     </button>
                   </div>
                 </div>
               </div>
             </div>
           ))}
+
+          {filteredContent.length === 0 && (
+            <div className="text-center py-12">
+              <FileText className="w-12 h-12 text-surface-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-surface-900 mb-2">No Content Found</h3>
+              <p className="text-surface-700">
+                {searchQuery 
+                  ? "No items match your search criteria" 
+                  : "No content has been published yet"}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Language Selection Dialog */}
@@ -299,7 +392,7 @@ export function MarketplacePage() {
                 className="bg-surface-100 rounded-2xl p-6 max-w-lg w-full mx-4 border border-surface-200 shadow-xl"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-surface-900">Select Translation Language</h3>
+                  <h3 className="text-xl font-bold text-surface-900">Purchase Translation</h3>
                   <button
                     onClick={() => setShowLanguageDialog(false)}
                     className="p-2 hover:bg-surface-200 rounded-lg transition-colors"
@@ -308,34 +401,91 @@ export function MarketplacePage() {
                   </button>
                 </div>
 
-                <div className="mb-4">
-                  <p className="text-surface-700">
-                    Original: <span className="font-medium text-surface-900">{selectedContent.originalLanguage}</span>
-                  </p>
+                <div className="mb-6 space-y-4">
+                  <div className="flex items-start gap-3 bg-surface-200/50 rounded-xl p-4">
+                    <div className="p-2 bg-brand-500/10 rounded-lg">
+                      <Coins className="w-5 h-5 text-brand-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-surface-900 mb-1">Translation Purchase</h4>
+                      <p className="text-sm text-surface-700">
+                        Purchase this translation to unlock the content in your selected language.
+                        Revenue is shared between the creator ({selectedContent.creator_share || 85}%)
+                        and the platform ({selectedContent.agent_share || 15}%).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-surface-200/50 rounded-xl p-4">
+                    <p className="text-sm text-surface-700 mb-2">
+                      Original Language: <span className="font-medium text-surface-900">{selectedContent.language}</span>
+                    </p>
+                    <p className="text-sm text-surface-700">
+                      Content Length: {selectedContent.content_data?.attributes?.[0]?.value?.length || 0} characters
+                    </p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[40vh] overflow-y-auto p-1">
                   {availableLanguages
-                    .filter(lang => lang.name !== selectedContent.originalLanguage)
+                    .filter(lang => lang.name.toLowerCase() !== selectedContent.language.toLowerCase())
                     .map(lang => (
                       <button
                         key={lang.code}
                         onClick={() => handleTranslationRequest(lang.code)}
-                        className="p-3 rounded-xl border border-surface-300 bg-surface-200 hover:bg-surface-300/50 
-                                 hover:border-brand-500/50 transition-all text-left group"
+                        disabled={purchaseStatus !== 'idle' || !address}
+                        className={`p-3 rounded-xl border text-left group transition-all
+                          ${purchaseStatus === 'idle'
+                            ? 'border-surface-300 bg-surface-200 hover:bg-surface-300/50 hover:border-brand-500/50'
+                            : 'opacity-50 cursor-not-allowed'
+                          }
+                          ${selectedLanguage === lang.code && purchaseStatus !== 'idle'
+                            ? 'border-brand-500 bg-brand-500/10'
+                            : ''
+                          }
+                        `}
                       >
                         <div className="font-medium text-surface-900 group-hover:scale-105 transition-transform">
                           {lang.name}
                         </div>
                         <div className="text-sm text-surface-700">{lang.nativeName}</div>
+                        {selectedLanguage === lang.code && purchaseStatus !== 'idle' && (
+                          <div className="mt-2 text-sm font-medium text-brand-500">
+                            {purchaseStatus === 'purchasing' ? 'Purchasing...' : 'Purchased!'}
+                          </div>
+                        )}
                       </button>
                     ))}
                 </div>
+
+                {!address && (
+                  <div className="mt-4 text-center text-sm text-surface-700">
+                    Please connect your wallet to purchase translations
+                  </div>
+                )}
               </motion.div>
             </div>
           )}
         </AnimatePresence>
+
+        {/* Add the TranslationDialog component */}
+        {currentTranslation && (
+          <TranslationDialog
+            isOpen={showTranslationDialog}
+            onClose={() => {
+              setShowTranslationDialog(false);
+              setSelectedContent(null);
+              fetchContents(); // Refresh content when dialog is closed
+            }}
+            language={currentTranslation.language}
+            translatedText={currentTranslation.text}
+          />
+        )}
       </div>
+       <div>
+      {/* Always show the TranslationDialog */}
+
+    </div>
     </div>
   );
 }
