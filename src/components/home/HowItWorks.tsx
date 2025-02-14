@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Cpu, Coins, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Sparkles, FileText, Globe2, Coins, ShieldCheck, ArrowRight } from 'lucide-react';
 
 interface StepProps {
   icon: React.ReactNode;
@@ -57,24 +57,24 @@ function Step({ icon, title, description, index, isLast }: StepProps) {
 export function HowItWorks() {
   const steps = [
     {
-      icon: <Sparkles className="animate-pulse" />,
+      icon: <FileText className="animate-pulse" />,
       title: "Create & Mint",
-      description: "Transform your content into an NFT with secure ownership and customizable royalty settings"
+      description: "Upload your digital content and mint it as an NFT with customizable royalty settings"
     },
     {
-      icon: <Cpu className="animate-pulse" />,
-      title: "AI Translation",
-      description: "Instantly translate your content into multiple languages while preserving its original essence"
+      icon: <Globe2 className="animate-pulse" />,
+      title: "Enable Features",
+      description: "Choose which features to enable, including AI translations, licensing options, and usage rights"
     },
     {
       icon: <Coins />,
-      title: "Earn Royalties",
-      description: "Generate passive income through automated royalty distribution for creators and translators"
+      title: "List & Share",
+      description: "List your content on the marketplace and share it with a global audience"
     },
     {
       icon: <ShieldCheck />,
-      title: "Blockchain Security",
-      description: "Keep your intellectual property secure with immutable blockchain records and smart contracts"
+      title: "Earn & Track",
+      description: "Earn from sales, translations, and usage while tracking your content's performance"
     }
   ];
 
@@ -90,7 +90,7 @@ export function HowItWorks() {
             How It Works
           </h2>
           <p className="text-base text-surface-700 max-w-2xl mx-auto leading-relaxed">
-            Transform your content into multiple languages while preserving ownership and earning royalties
+            Turn your digital content into valuable assets with our streamlined platform
           </p>
         </div>
         

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, Lock, Shield } from 'lucide-react';
+import { Zap, Lock, Shield, Globe2, Coins, FileText } from 'lucide-react';
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -20,24 +20,39 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
 export function Features() {
   const features = [
     {
-      icon: <Zap />,
-      title: 'AI Translation',
-      description: 'State-of-the-art AI models for accurate translations.',
+      icon: <FileText />,
+      title: 'Digital Content NFTs',
+      description: 'Transform your content into unique NFTs with verifiable ownership and royalty settings.',
+    },
+    {
+      icon: <Globe2 />,
+      title: 'Global Translations',
+      description: 'Enable AI-powered translations to reach a global audience while maintaining content rights.',
+    },
+    {
+      icon: <Coins />,
+      title: 'Royalty System',
+      description: 'Earn from content sales, translations, and usage through automated smart contracts.',
     },
     {
       icon: <Lock />,
-      title: 'Blockchain Security',
-      description: 'Immutable ownership records and royalty distribution.',
+      title: 'Content Rights',
+      description: 'Protect your intellectual property with blockchain-backed ownership and licensing.',
+    },
+    {
+      icon: <Zap />,
+      title: 'Instant Minting',
+      description: 'Create and list your digital content NFTs in minutes with gas-efficient transactions.',
     },
     {
       icon: <Shield />,
-      title: 'Rights Management',
-      description: 'Automated licensing and royalty tracking.',
+      title: 'Secure Platform',
+      description: 'Built on Sei Network with enterprise-grade security and scalability.',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
       {features.map((feature) => (
         <FeatureCard key={feature.title} {...feature} />
       ))}

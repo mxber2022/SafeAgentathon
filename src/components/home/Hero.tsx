@@ -6,16 +6,16 @@ export function Hero() {
     <header className="text-center mb-24">
       <div className="inline-flex items-center px-4 py-2 mb-8 rounded-full bg-surface-200/50 border border-surface-300/50 text-surface-700">
         <Sparkles className="w-4 h-4 mr-2 text-brand-500" />
-        <span className="text-sm font-medium">Revolutionizing Content Translation with Blockchain</span>
+        <span className="text-sm font-medium">Revolutionizing Digital Content Ownership</span>
       </div>
       
       <h1 className="text-7xl text-surface-900 mb-6 leading-tight bg-gradient-to-r from-brand-500 to-brand-300 bg-clip-text text-transparent animate-gradient">
-        AI-Powered Content
-        <span className="block">Translation</span>
+        Create, Own, and Share
+        <span className="block">Digital Content</span>
       </h1>
       
       <p className="text-xl text-surface-700 max-w-2xl mx-auto font-medium leading-relaxed mb-12">
-        Transform your content into multiple languages while preserving ownership and earning royalties through blockchain technology.
+        Mint your digital content as NFTs, enable global translations, and earn royalties through our decentralized marketplace.
       </p>
 
       <div className="flex items-center justify-center gap-6">
