@@ -1,11 +1,19 @@
-import React from 'react';
-import { Menu, Wallet, LogOut, Globe2 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
-import { useScroll } from '../../hooks/useScroll';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAppKit } from '@reown/appkit/react';
-import { useAppKitAccount } from '@reown/appkit/react';
-import { useDisconnect } from '@reown/appkit/react';
+import React from "react";
+import {
+  Menu,
+  Wallet,
+  LogOut,
+  Globe2,
+  FolderHeart,
+  FileText,
+  ShoppingBag,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useScroll } from "../../hooks/useScroll";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAppKit } from "@reown/appkit/react";
+import { useAppKitAccount } from "@reown/appkit/react";
+import { useDisconnect } from "@reown/appkit/react";
 
 export function Dock() {
   const { isVisible } = useScroll();
@@ -16,21 +24,30 @@ export function Dock() {
   const { open } = useAppKit();
   const { address, isConnected, status } = useAppKitAccount();
   const { disconnect } = useDisconnect();
-  
+
   const navItems = [
-    { label: 'PublishContent', path: '/mint' },
-    { label: 'Posts', path: '/marketplace' },
+    { icon: <FileText className="w-4 h-4" />, label: "Publish", path: "/mint" },
+    {
+      icon: <ShoppingBag className="w-4 h-4" />,
+      label: "Posts",
+      path: "/marketplace",
+    },
+    {
+      icon: <FolderHeart className="w-4 h-4" />,
+      label: "Collections",
+      path: "/collections",
+    },
   ];
 
   const truncateAddress = (addr: string) => {
-    if (!addr) return '';
+    if (!addr) return "";
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
   const getButtonText = () => {
-    if (status === 'connecting') return 'Connecting...';
+    if (status === "connecting") return "Connecting...";
     if (isConnected && address) return truncateAddress(address);
-    return 'Connect Wallet';
+    return "Connect Wallet";
   };
 
   const handleWalletClick = async () => {
@@ -44,26 +61,29 @@ export function Dock() {
       await disconnect();
       setIsDropdownOpen(false);
     } catch (error) {
-      console.error('Wallet disconnection failed:', error);
+      console.error("Wallet disconnection failed:", error);
     }
   };
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: isVisible ? 0 : -100 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
       className="fixed top-0 left-0 right-0 z-50"
     >
       {/* Backdrop blur effect */}
@@ -73,9 +93,14 @@ export function Dock() {
       <div className="relative mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 text-surface-900 group">
+          <Link
+            to="/"
+            className="flex items-center space-x-2 text-surface-900 group"
+          >
             <Globe2 className="h-6 w-6 text-brand-500 group-hover:scale-110 transition-transform" />
-            <span className="text-lg font-bold group-hover:text-brand-500 transition-colors">PolyGlot</span>
+            <span className="text-lg font-bold group-hover:text-brand-500 transition-colors">
+              PolyGlot
+            </span>
           </Link>
 
           {/* Desktop navigation */}
@@ -86,9 +111,9 @@ export function Dock() {
                   key={item.path}
                   to={item.path}
                   className={`relative px-3 py-2 text-sm font-medium transition-colors ${
-                    location.pathname === item.path 
-                      ? 'text-brand-500' 
-                      : 'text-surface-700 hover:text-surface-900'
+                    location.pathname === item.path
+                      ? "text-brand-500"
+                      : "text-surface-700 hover:text-surface-900"
                   }`}
                 >
                   {item.label}
@@ -97,7 +122,11 @@ export function Dock() {
                       layoutId="activeIndicator"
                       className="absolute -bottom-1 left-0 right-0 h-0.5 bg-brand-500"
                       initial={false}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      transition={{
+                        type: "spring",
+                        bounce: 0.2,
+                        duration: 0.6,
+                      }}
                     />
                   )}
                 </Link>
@@ -108,8 +137,8 @@ export function Dock() {
           {/* Right section with wallet */}
           <div className="flex items-center">
             {/* Wallet Button with Dropdown */}
-            <div 
-              className="relative" 
+            <div
+              className="relative"
               ref={dropdownRef}
               onMouseEnter={() => isConnected && setIsDropdownOpen(true)}
               onMouseLeave={() => setIsDropdownOpen(false)}
@@ -118,14 +147,16 @@ export function Dock() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleWalletClick}
-                disabled={status === 'connecting'}
+                disabled={status === "connecting"}
                 className={`connect-button flex items-center space-x-2 group ${
-                  isConnected ? 'bg-brand-600 hover:bg-brand-700' : ''
+                  isConnected ? "bg-brand-600 hover:bg-brand-700" : ""
                 }`}
               >
-                <Wallet className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                  status === 'connecting' ? 'animate-spin' : ''
-                }`} />
+                <Wallet
+                  className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                    status === "connecting" ? "animate-spin" : ""
+                  }`}
+                />
                 <span>{getButtonText()}</span>
               </motion.button>
 
@@ -167,7 +198,7 @@ export function Dock() {
           {isMobileMenuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
               className="md:hidden py-4"
@@ -186,15 +217,15 @@ export function Dock() {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`block px-4 py-3 rounded-lg transition-all duration-300 ${
                         location.pathname === item.path
-                          ? 'text-brand-500 bg-brand-500/10'
-                          : 'text-surface-700 hover:text-surface-900 hover:bg-surface-200/50'
+                          ? "text-brand-500 bg-brand-500/10"
+                          : "text-surface-700 hover:text-surface-900 hover:bg-surface-200/50"
                       }`}
                     >
                       {item.label}
                     </Link>
                   </motion.div>
                 ))}
-                
+
                 {/* Mobile Wallet Button */}
                 {isConnected ? (
                   <motion.button
@@ -213,12 +244,14 @@ export function Dock() {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 20, opacity: 0 }}
                     onClick={handleWalletClick}
-                    disabled={status === 'connecting'}
+                    disabled={status === "connecting"}
                     className="connect-button w-full mt-4 py-3 flex items-center justify-center space-x-2"
                   >
-                    <Wallet className={`w-4 h-4 ${
-                      status === 'connecting' ? 'animate-spin' : ''
-                    }`} />
+                    <Wallet
+                      className={`w-4 h-4 ${
+                        status === "connecting" ? "animate-spin" : ""
+                      }`}
+                    />
                     <span>{getButtonText()}</span>
                   </motion.button>
                 )}
